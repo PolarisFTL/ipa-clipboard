@@ -54,7 +54,8 @@ jobs:
           foreach ($name in @('README.md','SOURCES.md','LICENSE','THIRD-PARTY-NOTICES.md','CHANGELOG.md')) { Copy-Item -LiteralPath $name -Destination $packageRoot }
           $zipName = "IPA-Clipboard-v$version-win-x64.zip"
           Compress-Archive -Path "$packageRoot/*" -DestinationPath "release/$zipName" -Force
-          $lines = foreach ($name in @('IPA音标助手.exe', $zipName)) {
+          Copy-Item -LiteralPath 'release/IPA音标助手.exe' -Destination 'release/IPA-Clipboard.exe' -Force
+          $lines = foreach ($name in @('IPA-Clipboard.exe', $zipName)) {
             $hash = (Get-FileHash -LiteralPath "release/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $name"
           }
@@ -72,10 +73,24 @@ jobs:
         run: |
           $version = ([xml](Get-Content -LiteralPath 'src/IPAClipboard.csproj' -Raw)).Project.PropertyGroup.Version
           $tag = "v$version"
-          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) { Write-Output '该版本已存在，保留原有发布。'; exit 0 }
+          $existingJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $existing = $existingJson | ConvertFrom-Json
+            $legacyAsset = $existing.assets | Where-Object { $_.name -eq 'IPA.exe' } | Select-Object -First 1
+            $legacyNotes = $existing.body.Contains('**IPA音标助手.exe**')
+            if (!$legacyAsset -and !$legacyNotes) { Write-Output '该版本已存在，保留原有发布。'; exit 0 }
+            if ($legacyAsset) {
+              gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/releases/assets/$($legacyAsset.id)" -f 'name=IPA-Clipboard.exe' -f 'label=IPA 音标助手（Windows x64 单文件）' *> $null
+              if ($LASTEXITCODE -ne 0) { throw '统一附件名称失败' }
+            }
+            gh release upload $tag 'release/IPA-Clipboard.exe' "release/IPA-Clipboard-v$version-win-x64.zip" 'release/SHA256SUMS.txt' --repo $env:GITHUB_REPOSITORY --clobber
+            if ($LASTEXITCODE -ne 0) { throw '更新附件或校验文件失败' }
+            gh release edit $tag --repo $env:GITHUB_REPOSITORY --notes-file "docs/发布说明-$tag.md" --latest
+            if ($LASTEXITCODE -ne 0) { throw '更新发布说明失败' }
+            exit 0
+          }
           $sha = git rev-parse HEAD
-          gh release create $tag 'release/IPA音标助手.exe' "release/IPA-Clipboard-v$version-win-x64.zip" 'release/SHA256SUMS.txt' --repo $env:GITHUB_REPOSITORY --target $sha --draft --title "IPA 音标助手 $tag" --notes-file "docs/发布说明-$tag.md"
+          gh release create $tag 'release/IPA-Clipboard.exe' "release/IPA-Clipboard-v$version-win-x64.zip" 'release/SHA256SUMS.txt' --repo $env:GITHUB_REPOSITORY --target $sha --draft --title "IPA 音标助手 $tag" --notes-file "docs/发布说明-$tag.md"
           if ($LASTEXITCODE -ne 0) { throw '创建发布或上传附件失败' }
           gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw '公开发布失败' }
