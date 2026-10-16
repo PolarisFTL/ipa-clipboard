@@ -1,0 +1,92 @@
+name: Windows 便携版构建与发布
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: 获取仓库
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: 首次导入完整源码
+        shell: pwsh
+        run: |
+          $bundle = 'ipa-clipboard-source.bundle'
+          if (!(Test-Path -LiteralPath $bundle)) { exit 0 }
+          git bundle verify $bundle
+          if ($LASTEXITCODE -ne 0) { throw '源码包校验失败' }
+          git fetch $bundle refs/heads/main:refs/remotes/seed/main
+          if ($LASTEXITCODE -ne 0) { throw '源码包导入失败' }
+          git checkout refs/remotes/seed/main -- assets build docs licenses src tests .gitignore BUILD.md CHANGELOG.md LICENSE NuGet.Config README.md SOURCES.md THIRD-PARTY-NOTICES.md
+          if ($LASTEXITCODE -ne 0) { throw '源码展开失败' }
+          git rm -- $bundle
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m '发布完整源码、中文教程和界面例图'
+          if ($LASTEXITCODE -ne 0) { throw '源码提交失败' }
+          git push origin HEAD:main
+          if ($LASTEXITCODE -ne 0) { throw '源码推送失败' }
+      - name: 准备 .NET 10 SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.402'
+      - name: 构建自包含单文件 EXE
+        shell: pwsh
+        run: ./build/Publish.ps1
+      - name: 运行发布 EXE 自测
+        shell: pwsh
+        run: ./tests/Run-Tests.ps1
+      - name: 整理便携包与校验文件
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content -LiteralPath 'src/IPAClipboard.csproj' -Raw)).Project.PropertyGroup.Version
+          $packageRoot = Join-Path $env:RUNNER_TEMP 'ipa-clipboard-package'
+          New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
+          Copy-Item -LiteralPath 'release/IPA音标助手.exe' -Destination $packageRoot
+          foreach ($dir in @('docs','licenses')) { Copy-Item -LiteralPath $dir -Destination $packageRoot -Recurse -Force }
+          foreach ($name in @('README.md','SOURCES.md','LICENSE','THIRD-PARTY-NOTICES.md','CHANGELOG.md')) { Copy-Item -LiteralPath $name -Destination $packageRoot }
+          $zipName = "IPA-Clipboard-v$version-win-x64.zip"
+          Compress-Archive -Path "$packageRoot/*" -DestinationPath "release/$zipName" -Force
+          $lines = foreach ($name in @('IPA音标助手.exe', $zipName)) {
+            $hash = (Get-FileHash -LiteralPath "release/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $name"
+          }
+          $lines | Set-Content -LiteralPath 'release/SHA256SUMS.txt' -Encoding utf8
+      - name: 保存构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: IPA-Clipboard-win-x64
+          path: release/*
+          if-no-files-found: error
+      - name: 发布 GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = ([xml](Get-Content -LiteralPath 'src/IPAClipboard.csproj' -Raw)).Project.PropertyGroup.Version
+          $tag = "v$version"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Output '该版本已存在，保留原有发布。'; exit 0 }
+          $sha = git rev-parse HEAD
+          gh release create $tag 'release/IPA音标助手.exe' "release/IPA-Clipboard-v$version-win-x64.zip" 'release/SHA256SUMS.txt' --repo $env:GITHUB_REPOSITORY --target $sha --draft --title "IPA 音标助手 $tag" --notes-file "docs/发布说明-$tag.md"
+          if ($LASTEXITCODE -ne 0) { throw '创建发布或上传附件失败' }
+          gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw '公开发布失败' }
+      - name: 保存测试记录
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: IPA-Clipboard-test-results
+          path: |
+            tests/run-*/results.json
+            tests/run-*/FAILED.txt
+            tests/run-*/*.png
+            tests/run-*/clipboard-after-exit.json
+          if-no-files-found: ignore
