@@ -1,0 +1,13 @@
+build/*
+!build/Publish.ps1
+!build/create_catalog.py
+src/bin/
+src/obj/
+release/
+tests/*
+!tests/Run-Tests.ps1
+TEST-REPORT.md
+.vs/
+*.user
+*.suo
+*.log

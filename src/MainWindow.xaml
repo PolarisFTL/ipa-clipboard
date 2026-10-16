@@ -1,0 +1,58 @@
+<Window x:Class="IPAClipboard.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="IPA 音标助手" Width="440" Height="570" MinWidth="300" MinHeight="360" Background="#F8FAFC" FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="12" WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True">
+  <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="49" ResizeBorderThickness="5" CornerRadius="12" GlassFrameThickness="0" UseAeroCaptionButtons="False" /></shell:WindowChrome.WindowChrome>
+  <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="10" Background="#F8FAFC">
+    <Grid Margin="14,0,14,0">
+      <Grid.RowDefinitions><RowDefinition Height="50" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="34" /></Grid.RowDefinitions>
+      <Grid Grid.Row="0" Background="Transparent">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Border Background="#2563EB" Width="26" Height="26" CornerRadius="7" Margin="0,0,8,0"><TextBlock Text="ə" FontFamily="Cambria" FontSize="23" Foreground="White" TextAlignment="Center" Margin="0,-3,0,0" /></Border><TextBlock x:Name="TitleLabel" Text="IPA 音标助手" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" /></StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button x:Name="PinButton" AutomationProperties.Name="置顶或取消置顶" Style="{StaticResource SoftButton}" Width="30" Height="30" Click="TogglePin" ToolTip="取消置顶"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE718;" Foreground="{StaticResource Accent}" /></Button>
+          <Button x:Name="MiniButton" AutomationProperties.Name="切换迷你模式" Style="{StaticResource SoftButton}" Width="30" Height="30" Click="ToggleMini" ToolTip="迷你模式"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE740;" /></Button>
+          <Button AutomationProperties.Name="最小化" Style="{StaticResource SoftButton}" Width="30" Height="30" Click="MinimizeWindow" ToolTip="最小化"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE921;" /></Button>
+          <Button AutomationProperties.Name="关闭" Style="{StaticResource SoftButton}" Width="30" Height="30" Click="CloseWindow" ToolTip="关闭"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8BB;" /></Button>
+        </StackPanel>
+      </Grid>
+      <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /><ColumnDefinition Width="28" /></Grid.ColumnDefinitions>
+          <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center" />
+          <TextBox x:Name="SearchBox" Grid.Column="1" AutomationProperties.Name="搜索音标、分类或英文示例" BorderThickness="0" Background="Transparent" Padding="0,10" FontSize="12" VerticalContentAlignment="Center" TextChanged="SearchChanged" />
+          <TextBlock x:Name="SearchHint" Grid.Column="1" Text="搜索音标 / 分类 / 英文示例…" Foreground="#94A3B8" VerticalAlignment="Center" IsHitTestVisible="False" />
+          <Button Grid.Column="2" Style="{StaticResource SoftButton}" AutomationProperties.Name="清空搜索" Content="×" Click="ClearSearch" Padding="2" Margin="0,5,4,5" />
+        </Grid>
+      </Border>
+      <Border Grid.Row="2" Background="#EEF2F6" CornerRadius="8" Padding="3" Margin="0,0,0,10">
+        <UniformGrid Columns="4">
+          <RadioButton x:Name="EnglishTab" Style="{StaticResource PageTab}" GroupName="pages" Content="英语常用" Tag="english" Checked="PageChanged" />
+          <RadioButton x:Name="IpaTab" Style="{StaticResource PageTab}" GroupName="pages" Content="完整 IPA" Tag="ipa" Checked="PageChanged" />
+          <RadioButton x:Name="CommonTab" Style="{StaticResource PageTab}" GroupName="pages" Content="常用符号" Tag="common" Checked="PageChanged" />
+          <RadioButton x:Name="SavedTab" Style="{StaticResource PageTab}" GroupName="pages" Content="收藏 / 最近" Tag="saved" Checked="PageChanged" />
+        </UniformGrid>
+      </Border>
+      <StackPanel Grid.Row="3">
+        <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+          <ComboBox x:Name="CategoryBox" AutomationProperties.Name="音标分类" Margin="0,0,12,0" MinHeight="26" SelectionChanged="CategoryChanged" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal"><TextBlock x:Name="FormatLabel" Text="复制为 " VerticalAlignment="Center" Foreground="#64748B" Margin="0,0,3,0" /><ComboBox x:Name="FormatBox" AutomationProperties.Name="复制格式" Width="82" MinHeight="26" SelectionChanged="FormatChanged"><ComboBoxItem Content="纯音标" /><ComboBoxItem Content="/音标/" /><ComboBoxItem Content="[音标]" /></ComboBox></StackPanel>
+        </Grid>
+        <TextBlock x:Name="PageNote" TextWrapping="Wrap" FontSize="10.5" Foreground="#64748B" Margin="0,0,0,10" />
+      </StackPanel>
+      <Grid Grid.Row="4">
+        <ScrollViewer x:Name="SymbolScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,0,8" CanContentScroll="False">
+          <ItemsControl x:Name="GroupsList" KeyboardNavigation.TabNavigation="Continue"><ItemsControl.ItemTemplate><DataTemplate>
+            <StackPanel Margin="0,0,0,9">
+              <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold" Foreground="#64748B" Margin="0,0,0,9" />
+              <ItemsControl ItemsSource="{Binding Items}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate>
+                <Button Style="{StaticResource SymbolButton}" Click="CopySymbol" PreviewKeyDown="SymbolKeyDown" AutomationProperties.Name="{Binding Entry.Tooltip}">
+                  <Button.ContextMenu><ContextMenu Opened="FavoriteMenuOpened"><MenuItem Header="收藏音标" Click="FavoriteClicked" /></ContextMenu></Button.ContextMenu>
+                </Button>
+              </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            </StackPanel>
+          </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        </ScrollViewer>
+        <TextBlock x:Name="EmptyLabel" Text="没有匹配的音标，试试其他关键词。" Foreground="#64748B" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+      </Grid>
+      <Grid Grid.Row="5"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock x:Name="StatusLabel" Text="单击复制 · 右键收藏" FontSize="11" VerticalAlignment="Center" Foreground="#64748B" TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite" /><TextBlock x:Name="CountLabel" Grid.Column="1" Foreground="#94A3B8" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0" /></Grid>
+    </Grid>
+  </Border>
+</Window>
