@@ -28,11 +28,11 @@ Windows 10 / 11 x64 · 离线使用 · 单文件便携版 · 无需安装运行�
 
 ## 下载与使用
 
-1. 打开 [Releases 下载页](https://github.com/PolarisFTL/ipa-clipboard/releases/latest)，下载附件中的 **`IPA音标助手.exe`**。
+1. 打开 [Releases 下载页](https://github.com/PolarisFTL/ipa-clipboard/releases/latest)，下载附件中的 **`IPA-Clipboard.exe`**。
 2. 双击 EXE 启动，单击需要的音标，例如 `/ʃ/`。
 3. 看到“✓ 已复制”后，切回目标程序，按 **Ctrl+V**。
 
-也可下载 **`IPA-Clipboard-v1.0.1-win-x64.zip`**，解压后运行其中的 EXE。GitHub 自动生成的 `Source code (zip)` 是开发源码，普通使用请选择上面的 EXE 或便携包。
+也可下载 **`IPA-Clipboard-v1.0.1-win-x64.zip`**，解压后运行其中的 **`IPA音标助手.exe`**。两种下载均为同一程序；单文件附件使用英文文件名，避免 GitHub 自动改写中文附件名。GitHub 自动生成的 `Source code (zip)` 是开发源码，普通使用请选择上面的 EXE 或便携包。
 
 **不需要安装 Python、Java、Node.js 或 .NET Runtime，也不需要执行命令或配置环境变量。** EXE 自带运行时，约 61.89 MiB，首次启动会在当前用户的临时目录提取内置运行库。系统要求为兼容 .NET 10 的 Windows 10/11 x64。
 
